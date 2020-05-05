@@ -1,0 +1,101 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Conditions:
+  KeyGiven:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: KeyName
+      - ''
+  InstanceProfileGiven:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: InstanceProfile
+      - ''
+Resources:
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:
+        Ref: Ami
+      SubnetId:
+        Ref: SubnetId
+      Tags:
+      - Key: Name
+        Value:
+          Ref: Name
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Fn::If:
+        - KeyGiven
+        - Ref: KeyName
+        - Ref: AWS::NoValue
+      DisableApiTermination:
+        Ref: TerminationProtection
+      BlockDeviceMappings:
+      - DeviceName: "/dev/xvda"
+        Ebs:
+          Encrypted: true
+          KmsKeyId: alias/aws/ebs
+          VolumeSize:
+            Ref: RootVolumeSize
+          DeleteOnTermination: true
+      IamInstanceProfile:
+        Fn::If:
+        - InstanceProfileGiven
+        - Ref: InstanceProfile
+        - Ref: AWS::NoValue
+      UserData: |
+        #!/bin/bash
+
+        echo 'Hello World!!'
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.small
+    NoEcho: false
+    Description: Instance type, determining its hardware properties
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Default: ''
+    NoEcho: false
+    Description: 'Subnet Id for instance to run in '
+  Ami:
+    Type: String
+    Default: ''
+    NoEcho: false
+    Description: Amazon Machine Image (AMI) id
+  Name:
+    Type: String
+    Default: MyEc2Server
+    NoEcho: false
+    Description: Name tag for the instance
+  TerminationProtection:
+    Type: String
+    Default: 'false'
+    NoEcho: false
+    Description: Allow instance termination by default
+    AllowedValues:
+    - 'false'
+    - 'true'
+  KeyName:
+    Type: String
+    Default: ''
+    NoEcho: false
+    Description: EC2 KeyPair, can be left blank
+  RootVolumeSize:
+    Type: Number
+    Default: '15'
+    NoEcho: false
+    Description: Size of the root volume, encrypted by default
+  InstanceProfile:
+    Type: String
+    Default: ''
+    NoEcho: false
+    Description: Instance profile NAME to pass to EC2 instance
+Description: simple-instance@latest - vlatest
+Outputs:
+  CfTemplateUrl:
+    Value: "/simple-instance.compiled.yaml"
+  CfTemplateVersion:
+    Value: latest
