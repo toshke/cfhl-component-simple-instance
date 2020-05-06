@@ -45,10 +45,11 @@ Resources:
         - InstanceProfileGiven
         - Ref: InstanceProfile
         - Ref: AWS::NoValue
-      UserData: |
-        #!/bin/bash
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
 
-        echo 'Hello World!!'
+          echo 'Hello World!!'
 Parameters:
   InstanceType:
     Type: String

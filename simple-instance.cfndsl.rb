@@ -23,7 +23,7 @@ CloudFormation do
     DisableApiTermination Ref(:TerminationProtection)
     BlockDeviceMappings bdmappings
     IamInstanceProfile FnIf(:InstanceProfileGiven, Ref(:InstanceProfile), Ref('AWS::NoValue'))
-    UserData File.read "#{template_dir}/user_data.sh" if File.exist? "#{template_dir}/user_data.sh"
+    UserData FnBase64(File.read "#{template_dir}/user_data.sh") if File.exist? "#{template_dir}/user_data.sh"
   end
 
 
