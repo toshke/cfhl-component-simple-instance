@@ -1,5 +1,7 @@
 CloudFormation do
 
+  user_data = external_parameters.fetch(:user_data, nil)
+
   Condition(:KeyGiven, FnNot(FnEquals(Ref(:KeyName), '')))
   Condition(:InstanceProfileGiven, FnNot(FnEquals(Ref(:InstanceProfile), '')))
   bdmappings = [
@@ -24,6 +26,7 @@ CloudFormation do
     BlockDeviceMappings bdmappings
     IamInstanceProfile FnIf(:InstanceProfileGiven, Ref(:InstanceProfile), Ref('AWS::NoValue'))
     UserData FnBase64(File.read "#{template_dir}/user_data.sh") if File.exist? "#{template_dir}/user_data.sh"
+    UserData FnBase64(user_data) unless user_data.nil?
   end
 
 
