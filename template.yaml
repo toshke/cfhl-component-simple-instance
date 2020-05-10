@@ -6,19 +6,32 @@ Conditions:
     - Fn::Equals:
       - Ref: KeyName
       - ''
-  InstanceProfileGiven:
-    Fn::Not:
-    - Fn::Equals:
-      - Ref: InstanceProfile
-      - ''
 Resources:
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+      Policies: []
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: Role
   Instance:
     Type: AWS::EC2::Instance
     Properties:
       ImageId:
         Ref: Ami
-      SubnetId:
-        Ref: SubnetId
       Tags:
       - Key: Name
         Value:
@@ -38,19 +51,45 @@ Resources:
           Encrypted: true
           KmsKeyId: alias/aws/ebs
           VolumeSize:
-            Ref: RootVolumeSize
+            Ref: RootVolumeSpace
           DeleteOnTermination: true
       IamInstanceProfile:
-        Fn::If:
-        - InstanceProfileGiven
-        - Ref: InstanceProfile
-        - Ref: AWS::NoValue
+        Ref: InstanceProfile
       UserData:
-        Fn::Base64: |
-          #!/bin/bash
-
-          echo 'Hello World!!'
+        Fn::Base64:
+          Fn::Sub: echo "Hello World!!"
+      SecurityGroupIds:
+      - Ref: InstanceSecurityGroup
+      SubnetId:
+        Ref: SubnetId
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Ref: VpcId
+      GroupDescription: Ec2Server - ASG SG
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+Outputs:
+  SecurityGroup:
+    Value:
+      Ref: InstanceSecurityGroup
+  InstanceId:
+    Value:
+      Ref: Instance
+  CfTemplateUrl:
+    Value: "/simple-instance.compiled.yaml"
+  CfTemplateVersion:
+    Value: latest
 Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: ''
+    NoEcho: false
+    Description: VPC for network elements (SG)
   InstanceType:
     Type: String
     Default: t3.small
@@ -84,19 +123,9 @@ Parameters:
     Default: ''
     NoEcho: false
     Description: EC2 KeyPair, can be left blank
-  RootVolumeSize:
+  RootVolumeSpace:
     Type: Number
     Default: '15'
     NoEcho: false
     Description: Size of the root volume, encrypted by default
-  InstanceProfile:
-    Type: String
-    Default: ''
-    NoEcho: false
-    Description: Instance profile NAME to pass to EC2 instance
 Description: simple-instance@latest - vlatest
-Outputs:
-  CfTemplateUrl:
-    Value: "/simple-instance.compiled.yaml"
-  CfTemplateVersion:
-    Value: latest
