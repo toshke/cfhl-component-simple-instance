@@ -1,0 +1,22 @@
+
+## if create_role is set to false
+## policies and managed_policies key are not used
+## and optional InstanceProfile name parameter is being added
+## to cloudformation template
+
+create_role: true
+
+# list of managed policies attached to instance role
+managed_policies:
+  - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+# add any IAM policies in here
+inline_policies: []
+
+
+# security group rules, allow https to internet by default
+allow_incoming:
+  - port: 443
+    range: 0.0.0.0/0
+    protocol: tcp
+
+name: Ec2Server
